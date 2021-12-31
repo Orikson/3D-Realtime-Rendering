@@ -1,11 +1,13 @@
-#ifndef _KERNEL_H
-#define _KERNEL_H
+// Kernel for vector shader
+
+#ifndef _KERNELV_H
+#define _KERNELV_H
 
 #include "../../common.h"
 
-class Kernel {
+class KernelV {
     public:
-        int start();
+        int start(int argc, char** argv);
     private:
         static bool isRunning;
 
@@ -16,8 +18,8 @@ class Kernel {
         void cleanUp(SDL_Window* window, SDL_GLContext &glContext);
 };
 
-bool Kernel::isRunning = true;
+bool KernelV::isRunning = true;
 
-#include "kernel.cpp"
+#include "kernelv.cpp"
 
 #endif

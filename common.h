@@ -6,8 +6,11 @@
 
 
 /*=======STANDARD TEMPLATE LIBRARY=======*/
+#include <stdio.h>
+#include <stdlib.h> 
 #include <iostream>
 #include <string>
+#include <fstream>
 #include <cstdlib>
 #include <memory>
 #include <ctime>
@@ -40,6 +43,7 @@ template<typename Base, typename T> inline bool instanceof(const T*) {
 #include <GL/glew.h>
 #include <GL/glu.h>
 #include <GL/gl.h>
+#include <GL/glut.h>
 
 
 /*=======SDL2=======*/

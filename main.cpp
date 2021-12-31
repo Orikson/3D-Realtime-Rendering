@@ -1,9 +1,10 @@
-#include "Engine/Kernel/kernel.h"
+#include "Engine/Kernel/kernelf.h"
+#include "Engine/Kernel/kernelv.h"
 
 int main(int argc, char* argv[])
 {
-    Kernel* kernel;
-    kernel->start(); 
+    KernelF* kernel;
+    kernel->start(argc, argv); 
 
     return 0;
 }

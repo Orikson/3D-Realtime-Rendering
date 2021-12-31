@@ -17,6 +17,7 @@
                 "-lglew32",
                 "-lglew32mx",
                 "-lglu32",
+                "-lfreeglut",
                 "-lSDL2main",
                 "-lSDL2",
                 "-lSDL2_image",
