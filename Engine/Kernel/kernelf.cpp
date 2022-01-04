@@ -1,16 +1,40 @@
 int frame;
-GLuint ps, vs, prog, iFrame;
+float curtime = 0;
+auto initT = chrono::steady_clock::now();
+GLuint ps, vs, prog, iFrame, iTime;
+int resolution[2] = {600, 600};
 
+// data struct: (all unused are arbitrary)
+//          (id #)
+// [name]   [0]     [1]     [2]     [3]     [4]     [5]     [6]     [7]     [8]
+// sphere   0       x       y       z       r
+// cone     1       x       y       z       c1      c2      h
+// box      2       x       y       z       w       l       h
 struct shader_data_t {
-    float data[4] = {0.33, 0.33, 0.66, 1.0};
+    float res[2] = {resolution[0], resolution[1]};
+    int size = 2;
+    int width = 7;
+    float data[14] = {
+        //0,      0,      0,      1,      1,      0,      0, 
+        1,      0,      0,      2,      0.5,    0.5,    0.5,
+        2,      -1,     -2,     2,      1,      1,      1
+    };
 } shader_data;
 GLuint ssbo = 0;
 
 void render(void) {
+    auto cur = chrono::steady_clock::now();
+    std::chrono::duration<float> diff = cur - initT;
+
+    float dt = diff.count() - curtime;
+    curtime = diff.count();
+    
     frame += 1;
-    cout << "\rFrame: " << frame;
-	glClear(GL_COLOR_BUFFER_BIT);
-	glUniform1f(iFrame, frame);
+    cout << "\rFrame: " << frame << "\tTime: " << curtime << "\tdT: " << dt << "\tFPS: " << 1/dt;
+	
+    glClear(GL_COLOR_BUFFER_BIT);
+	glUniform1i(iFrame, frame);
+    glUniform1f(iTime, curtime);
 
     GLint prog = 0;
     glGetIntegerv(GL_CURRENT_PROGRAM, &prog);
@@ -19,7 +43,6 @@ void render(void) {
     block_index = glGetProgramResourceIndex(prog, GL_SHADER_STORAGE_BLOCK, "shader_data");
 
 
-    shader_data.data[0] = 0.33;
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
     GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
     memcpy(p, &shader_data, sizeof(shader_data));
@@ -95,10 +118,10 @@ void set_shader() {
 }
  
 int KernelF::start(int argc, char** argv) {
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
-    glutInitWindowPosition(80, 80);
-    glutInitWindowSize(600, 600);
+    glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);// | GLUT_MULTISAMPLE);
+    glutInitWindowPosition(200, 120);
+    glutInitWindowSize(resolution[0], resolution[1]);
     glutCreateWindow("Test");
     glutReshapeFunc(reshape);
 	glutIdleFunc(render);
