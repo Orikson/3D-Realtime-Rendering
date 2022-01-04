@@ -61,6 +61,11 @@
         "xutility": "cpp",
         "chrono": "cpp",
         "array": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "algorithm": "cpp",
+        "charconv": "cpp",
+        "forward_list": "cpp",
+        "optional": "cpp",
+        "ratio": "cpp"
     }
 }
