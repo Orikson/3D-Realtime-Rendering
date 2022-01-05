@@ -4,6 +4,8 @@
 varying float x, y, z;
 uniform int iFrame;
 uniform float iTime;
+uniform vec3 cPos;
+uniform vec3 cRot;
 
 const float MAXD = 100.0;
 
@@ -13,7 +15,7 @@ layout (std430, binding=2) buffer shader_data
 	vec2 res;
 	int size;
 	int width;
-  	float data[];
+	float data[];
 };
 
 // ro - current position
@@ -41,7 +43,6 @@ float distTo_sphere (vec3 ro, vec3 pos, float r) {
 float distTo_cone (vec3 ro, vec3 pos, vec2 c, float h) {
 	vec3 p = translate(ro, pos);
 	vec2 q = h*vec2(c.x/c.y,-1.0);
-    
 	vec2 w = vec2( length(p.xz), p.y );
 	vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
 	vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
@@ -60,19 +61,31 @@ float distTo_box (vec3 ro, vec3 pos, vec3 b) {
   	return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
+// ro - current position
+// pos - center of rounded cylinder
+// ra - radius of cylinder
+// rb - radius of edge
+// h - height of cylinder
+float distTo_roundedCylinder(vec3 ro, vec3 pos, float ra, float rb, float h) {
+  vec3 p = translate(ro, pos);
+  vec2 d = vec2(length(p.xz)-2.0*ra+rb, abs(p.y) - h);
+  return min(max(d.x,d.y),0.0) + length(max(d,0.0)) - rb;
+}
+
 // [COPIED FROM kernelf.cpp]
 // data struct: (all unused are arbitrary)
 //          (id #)
-// [name]   [0]     [1]     [2]     [3]     [4]     [5]     [6]     [7]     [8]
-// sphere   0       x       y       z       r
-// cone     1       x       y       z       c1      c2      h
-// box      2       x       y       z       w       l       h
+// [name]   [0]     [1]     [2]     [3]     [4]     [5]     [6]     [7]     [8]     [9]
+// sphere   0       x       y       z       r       red     green   blue    
+// cone     1       x       y       z       c1      c2      h       red     green   blue
+// box      2       x       y       z       w       l       h       red     green   blue
+// r cyl	3		x		y		z		ra		rb		h       red     green   blue
 
 // distance to closeset object in world
 // pos - current position
 float dist (vec3 pos) {
 	// dist to floor (y coord)
-	float minD = pos.y+2;
+	float minD = MAXD;//pos.y+2;
 
 	for (int i = 0; i < size; i ++) {
 		float curD = minD;
@@ -119,6 +132,20 @@ float dist (vec3 pos) {
 						data[i*width+5],
 						data[i*width+6]
 					)
+				);
+				break;
+
+			case 3: // rounded cylinder
+				curD = distTo_roundedCylinder(
+					pos, 
+					vec3(
+						data[i*width+1], 
+						data[i*width+2], 
+						data[i*width+3]
+					),
+					data[i*width+4],
+					data[i*width+5],
+					data[i*width+6]
 				);
 				break;
 			
@@ -193,11 +220,13 @@ void main() {
 	//gl_FragColor = vec4(col, 1.0);
 
 	vec2 uv = vec2(x, y);
-	vec3 ro = vec3(5*cos(float(iFrame)/1000), 2, 5*sin(float(iFrame)/1000));
-	vec3 fd = normalize(vec3(0,0,0)-ro);
-	vec3 upd = vec3(-fd.y*fd.xz,length(fd.xz)).xzy;
-	vec3 rtd = cross(fd,upd);
-	
+	//vec3 ro = vec3(5*cos(float(iFrame)/1000), 2, 5*sin(float(iFrame)/1000));
+	vec3 ro = cPos;
+	//vec3 fd = normalize(vec3(0,0,0)-ro);
+	vec3 fd = normalize(cRot);
+	vec3 upd = normalize(vec3(-fd.y*fd.xz,length(fd.xz)).xzy);
+	vec3 rtd = normalize(cross(fd,upd));
+
 	vec4 C = vec4(0);
 
 	C += getC(uv+vec2( 1, 1)*0.25/(res/2.0), fd, upd, rtd, ro);
@@ -208,4 +237,6 @@ void main() {
 	C /= 4.0;
 	
 	gl_FragColor = C;
+
+	//gl_FragColor = vec4(cRot, 1.0);
 }

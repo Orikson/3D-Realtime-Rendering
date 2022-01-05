@@ -1,13 +1,21 @@
 auto initT = chrono::steady_clock::now();
 
+// data struct: (all unused are arbitrary)
+//          (id #)
+// [name]   [0]     [1]     [2]     [3]     [4]     [5]     [6]     [7]     [8]     [9]
+// sphere   0       x       y       z       r       red     green   blue    
+// cone     1       x       y       z       c1      c2      h       red     green   blue
+// box      2       x       y       z       w       l       h       red     green   blue
+// r cyl	3		x		y		z		ra		rb		h       red     green   blue
 struct shader_data_t {
     float res[2] = {600, 600};
     int size = 2;
-    int width = 7;
-    float data[14] = {
+    int width = 10;
+    float data[20] = {
         //0,      0,      0,      1,      1,      0,      0, 
-        1,      0,      0,      2,      0.5,    0.5,    0.5,
-        2,      -1,     -2,     2,      1,      1,      1
+        //1,      0,      0,      2,      0.5,    0.5,    0.5,
+        2,      -1,     -2,     2,      1,      1,      1,      0,      0.5,    0,
+        3,      0,      -2,     0,      2,      0.5,    0.25,   0,      0,      0.5
     };
 } shader_data;
 
@@ -112,6 +120,18 @@ void Kernel::setShader() {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
+float* cross(float a[3], float b[3]) {
+    float a1 = a[0]; float a2 = a[1]; float a3 = a[2];
+    float b1 = b[0]; float b2 = b[1]; float b3 = b[2];
+
+    static float r[3];
+    r[0] = a2*b3-a3*b2;
+    r[1] = a3*b1-a1*b3;
+    r[2] = a1*b2-a2*b1;
+
+    return r;
+}
+
 /**
  * Handles events
  */
@@ -121,8 +141,49 @@ void Kernel::events(SDL_Window* window) {
 		switch (m_event.type) {
             case SDL_KEYDOWN:
                 switch (m_event.key.keysym.sym) {
+                    case SDLK_w: // w key
+                        wDown = true;
+                        break;
+                    case SDLK_a: // a key
+                        aDown = true;
+                        break;
+                    case SDLK_s: // s key
+                        sDown = true;
+                        break;
+                    case SDLK_d: // d key
+                        dDown = true;
+                        break;
+                    case SDLK_LSHIFT: // shift key
+                        shDown = true;
+                        break;
+                    case SDLK_SPACE: // shift key
+                        spDown = true;
+                        break;
                     case SDLK_ESCAPE: // exit game
                         isRunning = false;
+                        break;
+                }
+                break;
+
+            case SDL_KEYUP:
+                switch (m_event.key.keysym.sym) {
+                    case SDLK_w: // w key
+                        wDown = false;
+                        break;
+                    case SDLK_a: // a key
+                        aDown = false;
+                        break;
+                    case SDLK_s: // s key
+                        sDown = false;
+                        break;
+                    case SDLK_d: // d key
+                        dDown = false;
+                        break;
+                    case SDLK_LSHIFT: // shift key
+                        shDown = false;
+                        break;
+                    case SDLK_SPACE: // shift key
+                        spDown = false;
                         break;
                 }
                 break;
@@ -134,8 +195,46 @@ void Kernel::events(SDL_Window* window) {
                         break;
                 }
                 break;
+            
+            case SDL_MOUSEMOTION:
+                int relx = m_event.motion.xrel;
+                int rely = m_event.motion.yrel;
+                //SDL_Log("%d, %d", relx, rely);
+                float cX = 0.001;
+                float cY = 0.001;
+                curTheta += relx*cX;
+                curPhi += rely*cY;
+
+                if (curTheta > 2*PI) { curTheta -= 2*PI; }
+                else if (curTheta < -2*PI) { curTheta += 2*PI; }
+               
+                if (curPhi > PI/2) { curPhi = PI/2 - 0.001; } 
+                else if (curPhi < -PI/2) { curPhi = -PI/2 + 0.001; }
+
+                setDir(curTheta, curPhi+PI/2);
+                break;
+
         }
 	}
+
+    if (wDown) {
+        setPos(cameraRot[0]*0.1, cameraRot[1]*0.1, cameraRot[2]*0.1);
+    }
+    if (sDown) {
+        setPos(-cameraRot[0]*0.1, -cameraRot[1]*0.1, -cameraRot[2]*0.1);
+    }
+    if (aDown) {
+        setPos(cos(curTheta-PI/2)*0.1, 0, sin(curTheta-PI/2)*0.1);
+    }
+    if (dDown) {
+        setPos(-cos(curTheta-PI/2)*0.1, 0, -sin(curTheta-PI/2)*0.1);
+    }
+    if (spDown) {
+        setPos(0, 0.1, 0);
+    }
+    if (shDown) {
+        setPos(0, -0.1, 0);
+    }
 }
 
 /**
@@ -164,8 +263,31 @@ SDL_Window* Kernel::createWindow(const char* windowTitle, int width, int height)
         SDL_Log("Window Successful Generated");
 
     resolution[0] = width; resolution[1] = height;
+    curTheta = -PI; curPhi = PI/4;
+    setPos(5, 2, 0);
+    setDir(curTheta, curPhi+PI/2);
+
+    wDown = false;
+    sDown = false;
+    aDown = false;
+    dDown = false;
+
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     return window;
+}
+
+// add vector to position vector
+void Kernel::setPos(float x, float y, float z) {
+    cameraPos[0] += x;
+    cameraPos[1] += y;
+    cameraPos[2] += z;
+}
+
+void Kernel::setDir(float theta, float phi) {
+    cameraRot[0] = sin(phi) * cos(theta);
+    cameraRot[2] = sin(phi) * sin(theta);
+    cameraRot[1] = cos(phi);
 }
 
 void Kernel::update() {
@@ -182,6 +304,8 @@ void Kernel::update() {
     glClear(GL_COLOR_BUFFER_BIT);
 	glUniform1i(iFrame, frame);
     glUniform1f(iTime, curtime);
+    glUniform3f(glGetUniformLocation(prog, "cPos"), cameraPos[0], cameraPos[1], cameraPos[2]);
+    glUniform3f(glGetUniformLocation(prog, "cRot"), cameraRot[0], cameraRot[1], cameraRot[2]);
 
     GLint prog = 0;
     glGetIntegerv(GL_CURRENT_PROGRAM, &prog);

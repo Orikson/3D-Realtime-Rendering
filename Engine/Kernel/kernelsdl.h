@@ -18,9 +18,24 @@ class Kernel {
         void cleanUp(SDL_Window* window, SDL_GLContext &glContext);
         void events(SDL_Window* window);
         void setShader();
+        void setPos(float x, float y, float z);
+        void setDir(float theta, float phi);
+
+        float cameraPos[3];
+        float cameraRot[3];
+        float curTheta;
+        float curPhi;
+
+        bool wDown;
+        bool sDown;
+        bool aDown;
+        bool dDown;
+        bool spDown;
+        bool shDown;
 
         float frame, curtime = 0;
         GLuint ps, vs, prog, iFrame, iTime;
+        GLint cPos, cRot;
         GLuint ssbo = 0;
         int resolution[2];
 
