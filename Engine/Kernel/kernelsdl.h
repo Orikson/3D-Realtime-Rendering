@@ -32,6 +32,7 @@ class Kernel {
         bool dDown;
         bool spDown;
         bool shDown;
+        bool ctrlDown;
 
         float frame, curtime = 0;
         GLuint ps, vs, prog, iFrame, iTime;

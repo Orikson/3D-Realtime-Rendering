@@ -2,20 +2,22 @@ auto initT = chrono::steady_clock::now();
 
 // data struct: (all unused are arbitrary)
 //          (id #)
-// [name]   [0]     [1]     [2]     [3]     [4]     [5]     [6]     [7]     [8]     [9]
-// sphere   0       x       y       z       r       red     green   blue    
-// cone     1       x       y       z       c1      c2      h       red     green   blue
-// box      2       x       y       z       w       l       h       red     green   blue
-// r cyl	3		x		y		z		ra		rb		h       red     green   blue
+// [name]   [0]     [1]     [2]     [3]     [4]     [5]     [6]     [7]     [8]     [9]     [10]    [11]
+// sphere   0       x       y       z       r                       red     green   blue    mat     refidx
+// cone     1       x       y       z       c1      c2      h       red     green   blue    mat     refidx
+// box      2       x       y       z       w       l       h       red     green   blue    mat     refidx
+// r cyl	3		x		y		z		ra		rb		h       red     green   blue    mat     refidx
+// mat (0 -> diffuse, 1 -> metal, 2 -> glass)
 struct shader_data_t {
-    float res[2] = {600, 600};
-    int size = 2;
-    int width = 10;
-    float data[20] = {
-        //0,      0,      0,      1,      1,      0,      0, 
-        //1,      0,      0,      2,      0.5,    0.5,    0.5,
-        2,      -1,     -2,     2,      1,      1,      1,      0,      0.5,    0,
-        3,      0,      -2,     0,      2,      0.5,    0.25,   0,      0,      0.5
+    float res[2] = {500, 500};
+    int size = 3;
+    int width = 12;
+    float data[36] = {
+        0,      0,      0,      0,      1,      0,      0,      0.2,      0.2,     0.2,       2 ,      1.5,
+        0,      0,      -1001.5, 0,      1000,    0,      0,      0.2,      0.2,   0.2,     0,      0.0,
+        //1,      0,      0,      2,      0.5,    0.5,    0.5,    0.5,    0,     0,       1
+        2,      -1,     0,     4,      1,      1,      0.1,      0,      0.5,    0,      0,     0.0
+        //3,      0,      -2,     0,      2,      0.5,    0.25,   0,      0,      0.5
     };
 } shader_data;
 
@@ -75,7 +77,7 @@ int Kernel::initSDL() {
     } else {
         //Specify OpenGL Version (4.2)
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
         SDL_Log("SDL Initialized");
     }
@@ -83,7 +85,7 @@ int Kernel::initSDL() {
 
 void Kernel::setShader() {
     string line, text;
-    ifstream in("shaderSrc.frag");
+    ifstream in("rayTracingShaderSrc.frag");
     while(getline(in, line))
     {
         text += line + "\n";
@@ -159,6 +161,9 @@ void Kernel::events(SDL_Window* window) {
                     case SDLK_SPACE: // shift key
                         spDown = true;
                         break;
+                    case SDLK_LCTRL: // left control key
+                        ctrlDown = true;
+                        break;
                     case SDLK_ESCAPE: // exit game
                         isRunning = false;
                         break;
@@ -184,6 +189,9 @@ void Kernel::events(SDL_Window* window) {
                         break;
                     case SDLK_SPACE: // shift key
                         spDown = false;
+                        break;
+                    case SDLK_LCTRL: // left control key
+                        ctrlDown = false;
                         break;
                 }
                 break;
@@ -217,24 +225,31 @@ void Kernel::events(SDL_Window* window) {
         }
 	}
 
+    float moveC;
+    if (ctrlDown) {
+        moveC = 0.1;
+    } else {
+        moveC = 0.025;
+    }
     if (wDown) {
-        setPos(cameraRot[0]*0.1, cameraRot[1]*0.1, cameraRot[2]*0.1);
+        setPos(cameraRot[0]*moveC, cameraRot[1]*moveC, cameraRot[2]*moveC);
     }
     if (sDown) {
-        setPos(-cameraRot[0]*0.1, -cameraRot[1]*0.1, -cameraRot[2]*0.1);
+        setPos(-cameraRot[0]*moveC, -cameraRot[1]*moveC, -cameraRot[2]*moveC);
     }
     if (aDown) {
-        setPos(cos(curTheta-PI/2)*0.1, 0, sin(curTheta-PI/2)*0.1);
+        setPos(cos(curTheta-PI/2)*moveC, 0, sin(curTheta-PI/2)*moveC);
     }
     if (dDown) {
-        setPos(-cos(curTheta-PI/2)*0.1, 0, -sin(curTheta-PI/2)*0.1);
+        setPos(-cos(curTheta-PI/2)*moveC, 0, -sin(curTheta-PI/2)*moveC);
     }
     if (spDown) {
-        setPos(0, 0.1, 0);
+        setPos(0, moveC, 0);
     }
     if (shDown) {
-        setPos(0, -0.1, 0);
+        setPos(0, -moveC, 0);
     }
+
 }
 
 /**

@@ -5,7 +5,7 @@
 int main(int argc, char* argv[])
 {
     Kernel* kernel;
-    kernel->start("3D Rendering", 600, 600);//argc, argv); 
+    kernel->start("3D Rendering", 500, 500);//argc, argv); 
 
     return 0;
 }
